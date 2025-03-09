@@ -4,21 +4,30 @@
     <meta charset="UTF-8">
     <title>WhiteBoard</title>
     <style>
-        canvas { border: 3px solid black; background-color: #f0f0f0; }
+        canvas { border: 3px solid black; }
         .toolbox { margin: 10px; }
         button, input { margin-right: 10px; padding: 5px 10px; }
+        #bgCanvas { background-color: #ffffff; } /* 背景层白底 */
+        #drawCanvas { background: transparent; } /* 画笔层透明 */
+        #textCanvas { background: transparent; } /* 文本层透明 */
     </style>
 </head>
 <body>
-    <div class="toolbox">
-        <input type="color" id="colorPicker" value="#000000">
-        <input type="range" id="lineWidth" min="1" max="50" value="5">
-        <button id="pen">pen</button>
-        <button id="eraser">eraser</button>
-        <button id="clear">clear</button>
-        <button id="export">export</button>
-    </div>
-    <canvas id="whiteboard" width="2560" height="1920"></canvas>
-    <script src="script.js"></script>
+<div class="toolbox">
+    <input type="color" id="colorPicker" value="#000000">
+    <input type="range" id="lineWidth" min="1" max="50" value="5">
+    <button id="pen">pen</button>
+    <button id="eraser">eraser</button>
+    <button id="clear">clear</button>
+    <button id="export">export</button>
+    <input type="text" id="textInput" placeholder="输入文本">
+    <button id="addText">Text</button>
+</div>
+<div style="position: relative;">
+    <canvas id="bgCanvas" width="1920" height="1080" style="position: absolute; z-index: 0;"></canvas>
+    <canvas id="drawCanvas" width="1920" height="1080" style="position: absolute; z-index: 1;"></canvas>
+    <canvas id="textCanvas" width="1920" height="1080" style="position: absolute; z-index: 2;"></canvas>
+</div>
+<script src="script.js"></script>
 </body>
 </html>

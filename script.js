@@ -1,69 +1,135 @@
-const canvas = document.getElementById("whiteboard");
-const ctx = canvas.getContext("2d");
+const bgCanvas = document.getElementById("bgCanvas");
+const drawCanvas = document.getElementById("drawCanvas");
+const textCanvas = document.getElementById("textCanvas");
+const bgCtx = bgCanvas.getContext("2d");
+const drawCtx = drawCanvas.getContext("2d");
+const textCtx = textCanvas.getContext("2d");
 const colorPicker = document.getElementById("colorPicker");
 const penBtn = document.getElementById("pen");
 const eraserBtn = document.getElementById("eraser");
 const clearBtn = document.getElementById("clear");
 const lineWidth = document.getElementById("lineWidth");
 const exportBtn = document.getElementById("export");
+const textInput = document.getElementById("textInput");
+const addTextBtn = document.getElementById("addText");
 
 let isDrawing = false;
-let mode = 'pen';
+let mode = "pen";
 let lastX = 0;
 let lastY = 0;
+let texts = [];
+let draggingText = null;
 
-ctx.lineWidth = 5;
-ctx.lineCap = "round"; // 圆形箭头，画起来顺滑
-ctx.fillStyle = '#ffffff'; // 初始白底
+drawCtx.lineWidth = 5;
+drawCtx.lineCap = "round";
+textCtx.font = "20px Arial";
 
-// 开始画画
-canvas.addEventListener("mousedown", (e) => {
-    isDrawing = true;
-    [lastX, lastY] = [e.offsetX, e.offsetY];
+// 初始化背景层（白底）
+bgCtx.fillStyle = "#ffffff";
+bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+// 画所有文本
+function drawTexts() {
+    textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+    texts.forEach(t => {
+        textCtx.fillStyle = t.color;
+        textCtx.fillText(t.text, t.x, t.y);
+    });
+}
+
+// 切换画布事件
+function toggleCanvasEvents(drawActive, textActive) {
+    drawCanvas.style.pointerEvents = drawActive ? "auto" : "none";
+    textCanvas.style.pointerEvents = textActive ? "auto" : "none";
+}
+
+// 默认激活drawCanvas
+toggleCanvasEvents(true, false);
+
+// 画笔和橡皮擦监听drawCanvas
+drawCanvas.addEventListener("mousedown", (e) => {
+    if (mode === "pen" || mode === "eraser") {
+        isDrawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    }
 });
 
-// 画线过程
-canvas.addEventListener("mousemove", (e) => {
-    if (!isDrawing) return;
+drawCanvas.addEventListener("mousemove", (e) => {
+    if (isDrawing && (mode === "pen" || mode === "eraser")) {
+        drawCtx.beginPath();
+        drawCtx.moveTo(lastX, lastY);
+        drawCtx.lineTo(e.offsetX, e.offsetY);
+        drawCtx.strokeStyle = mode === "pen" ? colorPicker.value : "#ffffff";
+        drawCtx.stroke();
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    }
+});
 
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(e.offsetX, e.offsetY);
+drawCanvas.addEventListener("mouseup", () => isDrawing = false);
+drawCanvas.addEventListener("mouseout", () => isDrawing = false);
 
-    // 三元运算符
-    ctx.strokeStyle = mode === 'pen' ? colorPicker.value : '#ffffff';
-    ctx.stroke();
+// 文本监听textCanvas
+textCanvas.addEventListener("mousedown", (e) => {
+    if (mode === "text") {
+        draggingText = texts.find(t =>
+            e.offsetX >= t.x && e.offsetX <= t.x + textCtx.measureText(t.text).width &&
+            e.offsetY >= t.y - 20 && e.offsetY <= t.y
+        );
+        if (!draggingText && textInput.value.trim()) {
+            texts.push({ text: textInput.value, x: e.offsetX, y: e.offsetY, color: colorPicker.value });
+            textInput.value = "";
+            drawTexts();
+        }
+    }
+});
 
-    [lastX, lastY] = [e.offsetX, e.offsetY]; // 更新最后坐标
-})
+textCanvas.addEventListener("mousemove", (e) => {
+    if (draggingText) {
+        draggingText.x = e.offsetX;
+        draggingText.y = e.offsetY;
+        drawTexts();
+    }
+});
 
-// 停止画画
-canvas.addEventListener("mouseup", (e) => isDrawing = false);
-canvas.addEventListener("mouseout", (e) => isDrawing = false); // 鼠标离开也停止
+textCanvas.addEventListener("mouseup", () => draggingText = null);
+textCanvas.addEventListener("mouseout", () => draggingText = null);
 
-// 切换模式
-penBtn.addEventListener("click", () => mode = 'pen');
-eraserBtn.addEventListener("click", () => mode = 'eraser');
+penBtn.addEventListener("click", () => {
+    mode = "pen";
+    toggleCanvasEvents(true, false); // 激活drawCanvas
+});
 
-// 清空画布
+eraserBtn.addEventListener("click", () => {
+    mode = "eraser";
+    toggleCanvasEvents(true, false);
+});
+
 clearBtn.addEventListener("click", () => {
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    texts = [];
+    drawTexts();
 });
 
-// 监听粗细变化
 lineWidth.addEventListener("input", () => {
-    ctx.lineWidth = lineWidth.value;
+    drawCtx.lineWidth = lineWidth.value;
 });
 
-// 导出画布
 exportBtn.addEventListener("click", () => {
-    // 导出
-    const dataURL = canvas.toDataURL("image/png");
-
-    // 下载
-    const link = document.createElement("a"); // 创建下载链接
+    const mergedCanvas = document.createElement("canvas");
+    mergedCanvas.width = drawCanvas.width;
+    mergedCanvas.height = drawCanvas.height;
+    const mergedCtx = mergedCanvas.getContext("2d");
+    mergedCtx.drawImage(bgCanvas, 0, 0); // 背景层
+    mergedCtx.drawImage(drawCanvas, 0, 0); // 画笔层
+    mergedCtx.drawImage(textCanvas, 0, 0); // 文本层
+    const dataURL = mergedCanvas.toDataURL("image/png");
+    const link = document.createElement("a");
     link.href = dataURL;
     link.download = "whiteboard.png";
     link.click();
-})
+});
+
+addTextBtn.addEventListener("click", () => {
+    mode = "text";
+    toggleCanvasEvents(false, true); // 激活textCanvas
+});
