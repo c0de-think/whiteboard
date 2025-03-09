@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>WhiteBoard</title>
+    <style>
+        canvas { border: 3px solid black; background-color: #f0f0f0; }
+        .toolbox { margin: 10px; }
+        button, input { margin-right: 10px; padding: 5px 10px; }
+    </style>
 </head>
 <body>
     <div class="toolbox">
         <input type="color" id="colorPicker" value="#000000">
+        <input type="range" id="lineWidth" min="1" max="50" value="5">
         <button id="pen">pen</button>
         <button id="eraser">eraser</button>
         <button id="clear">clear</button>
+        <button id="export">export</button>
     </div>
     <canvas id="whiteboard" width="2560" height="1920"></canvas>
     <script src="script.js"></script>
